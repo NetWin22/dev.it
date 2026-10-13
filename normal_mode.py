@@ -15,6 +15,9 @@ fans = 0
 level = 0.1
 balance_text = "0"
 developers = 1
+month_next = 0
+month = 0
+month_text = "January"
 
 os.system('cls' if os.name == 'nt' else 'clear')
 print ("Welcome to Dev.it! before starting this adventure, please write here your name!")
@@ -53,17 +56,21 @@ while True:
         print("Invalid choice, please retry.")
 
 def ui_refresh():
+    global fans
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(f"Balance: ${balance_text}     Developers: {developers}     Company Name: {company_name}     Year: {year}     Level: {level * 10}")
+    fans = int(fans)
+    print(f"Balance: ${balance_text}     Developers: {developers}     Company Name: {company_name}     Fans: {fans}     Year: {year}     Month: {month}     Level: {level * 10}")
     print("---")
     print("History Log:")
     print("")
 
 def hire_dev():
-    global balance, level, developers
+    global balance, level, developers, month, history
     ui_refresh()
-    developer_cost = balance / (2 * random.uniform(0.4, 2))
-    developer_cost = round(developer_cost, 1)
+    base_cost = 5000
+    developer_cost = base_cost * (1 + developers * 0.2)
+    developer_cost *= random.uniform(0.9, 1.1)
+    developer_cost = round(developer_cost, 2)
     dev_cost_text = f"{developer_cost:,}".replace(",",".")
     print(f"The new developer will cost you ${developer_cost}. Want to hire him?")
     print("[Y/N]")
@@ -71,11 +78,13 @@ def hire_dev():
     if choice == "Y" or choice == "y":
         balance -= developer_cost
         developers += 1
+        month += 1
+        history += f"\nYou hired a developer for ${developer_cost}."
     else:
         print("Okay :)")
 
 def new_game():
-    global last_game_name, last_game_price, balance, last_game_sold, last_game_earnings, year, level, developers
+    global last_game_name, last_game_price, balance, last_game_sold, last_game_earnings, year, level, developers, month, fans
     ui_refresh()
     print("Game Name?:\n")
     game_name = input()
@@ -104,11 +113,16 @@ def new_game():
         
     balance -= budget
     #copies_sold = ((balance * budget) / 1000) * game_price * random.randint(3, 15 * level)   -- old formula
-    copies_sold = int(((budget / 10) * (60 / game_price if game_price > 0 else 1) * random.uniform(3, 15 * level * developers)))
+    #copies_sold = int(((budget / 10) * (60 / game_price if game_price > 0 else 1) * random.uniform(3, 15 * level * developers))) -- old formula
+    quality = ((budget / 10000) ** 0.5 * (1 + level * 0.15) * (1 + developers * 0.05))
+    price_factor = max(0.15, 1.5 - game_price / 40)
+    luck = random.uniform(0.7, 1.3)
+    copies_sold = max(0, int(500 * quality * price_factor * (1 + fans / 1000) * luck))
+    fans += round((copies_sold * 0.05), 0)
     last_game_sold = copies_sold
     last_game_earnings = copies_sold * game_price
     balance += last_game_earnings
-    year += 1
+    month += random.randint(4, 12)
     return
 
 balance_text = f"{balance:,}".replace(",",".")
@@ -119,6 +133,10 @@ print(f"{history}")
 
 while True:
     balance_text = f"{balance:,}".replace(",",".")
+    if month >= 12:
+        month_next = month - 12
+        year += 1
+        month = month_next
     ui_refresh()
     print(f"{history}\n")
     command = input()
@@ -129,9 +147,12 @@ while True:
         last_game_sold = f"{last_game_sold:,}".replace(",",".")
         history += f"\nThe game {last_game_name} was published at ${last_game_price}. You earned {last_game_earnings} by selling {last_game_sold} copies!"
     elif command == "help":
-        history += f"\nnew_game : Make and publish a new game.\nhire_dev : Hire a developer."
+        history += f"\n\nnew_game : Make and publish a new game.\nhire_dev : Hire a developer.\nclear : Clear the history log."
         ui_refresh()
     elif command == "hire_dev":
         hire_dev()
+    elif command == "clear":
+        history = ""
+        ui_refresh()
 
 
